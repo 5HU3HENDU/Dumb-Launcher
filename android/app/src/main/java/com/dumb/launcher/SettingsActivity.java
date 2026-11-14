@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -15,6 +16,7 @@ import android.widget.EditText;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.GridLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
@@ -34,7 +36,9 @@ import java.util.Set;
  *
  *   Categories - the category list in home-screen order: add a category, move
  *   one up or down, or edit one (pencil button: rename, or delete - its apps
- *   move to Other; Other itself cannot be renamed or deleted).
+ *   move to Other; Other itself cannot be renamed or deleted). Every
+ *   category, Other included, gets a colour swatch that opens a picker for
+ *   the background band colour shown behind its apps on the home grid.
  *
  *   Apps - every installed app A-Z (work copies marked " (Work)") with a
  *   category dropdown per app; choosing one moves the app there.
@@ -318,6 +322,25 @@ public class SettingsActivity extends Activity {
             row.addView(text, new LinearLayout.LayoutParams(
                     0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
+            // Band colour swatch; every category gets one, Other included.
+            final int currentColor = CategoryStore.colorFor(this, name);
+            View swatch = new View(this);
+            GradientDrawable chip = new GradientDrawable();
+            chip.setShape(GradientDrawable.RECTANGLE);
+            chip.setCornerRadius(dp(8));
+            chip.setColor(currentColor);
+            chip.setStroke(dp(1), 0x33000000);
+            swatch.setBackground(chip);
+            swatch.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    showColorPicker(name);
+                }
+            });
+            LinearLayout.LayoutParams swatchLp = new LinearLayout.LayoutParams(dp(32), dp(32));
+            swatchLp.setMargins(dp(6), 0, dp(6), 0);
+            row.addView(swatch, swatchLp);
+
             // Rename affordance; Other is the fixed fallback bucket and keeps its name.
             if (!CategoryStore.OTHER.equals(name)) {
                 Button edit = new Button(this);
@@ -334,6 +357,45 @@ public class SettingsActivity extends Activity {
             list.addView(row, new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         }
+    }
+
+    /** Colour picker: preset swatches for the category's home band colour. */
+    private void showColorPicker(final String name) {
+        final int[] choices = {
+                0xFFDBEAFE, 0xFFDCF5E4, 0xFFFEF3CD, 0xFFFCDEE9,
+                0xFFE9E2FD, 0xFFD7F2F0, 0xFFFDE8D8, 0xFFECECF1,
+                0xFF93C5FD, 0xFF86EFAC, 0xFFFCD34D, 0xFFF9A8D4,
+                0xFFC4B5FD, 0xFF5EEAD4, 0xFFFDBA74, 0xFFD1D5DB
+        };
+        final AlertDialog dialog = new AlertDialog.Builder(this).create();
+        GridLayout grid = new GridLayout(this);
+        grid.setColumnCount(4);
+        grid.setPadding(dp(16), dp(16), dp(16), dp(16));
+        for (final int color : choices) {
+            View sw = new View(this);
+            GradientDrawable chip = new GradientDrawable();
+            chip.setShape(GradientDrawable.RECTANGLE);
+            chip.setCornerRadius(dp(10));
+            chip.setColor(color);
+            chip.setStroke(dp(1), 0x33000000);
+            sw.setBackground(chip);
+            sw.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    CategoryStore.setColor(SettingsActivity.this, name, color);
+                    dialog.dismiss();
+                    renderList();
+                }
+            });
+            GridLayout.LayoutParams lp = new GridLayout.LayoutParams();
+            lp.width = dp(52);
+            lp.height = dp(52);
+            lp.setMargins(dp(6), dp(6), dp(6), dp(6));
+            grid.addView(sw, lp);
+        }
+        dialog.setTitle(name + " colour");
+        dialog.setView(grid);
+        dialog.show();
     }
 
     /** Edit dialog for one category: rename it, or delete it (apps move to Other). */

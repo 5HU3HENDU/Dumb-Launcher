@@ -8,6 +8,9 @@ import android.content.pm.LauncherApps;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -227,11 +230,13 @@ public class MainActivity extends Activity {
             for (String cat : CategoryStore.categoriesOf(this, inst.key)) {
                 List<AppInfo> group = groups.get(cat);
                 if (group != null) {
+                    app.category = cat;
                     group.add(app);
                     placed = true;
                 }
             }
             if (!placed) {
+                app.category = CategoryStore.OTHER;
                 groups.get(CategoryStore.OTHER).add(app);
             }
         }
@@ -272,6 +277,7 @@ public class MainActivity extends Activity {
     private static final class AppInfo {
         final String label;
         final String key;
+        String category = CategoryStore.OTHER;
         final Drawable icon;
         final ComponentName component;
         final UserHandle user;
@@ -292,6 +298,14 @@ public class MainActivity extends Activity {
      * There is deliberately no scrolling; tiles shrink to fit instead.
      */
     private final class GridArea extends ViewGroup {
+
+        private final Paint bandPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF bandRect = new RectF();
+        private int lastCols;
+        private int cellW;
+        private int cellH;
+        private int cellSize;
+        private int gapPx;
 
         GridArea(Context context) {
             super(context);
@@ -359,6 +373,11 @@ public class MainActivity extends Activity {
             int ch = h / rows;
             int gap = dp(3);
             int offY = (h - ch * rows) / 2;
+            lastCols = cols;
+            cellW = cw;
+            cellH = ch;
+            cellSize = bestCell;
+            gapPx = gap;
 
             for (int i = 0; i < n; i++) {
                 int col = i % cols;
@@ -369,22 +388,75 @@ public class MainActivity extends Activity {
                         cellLeft + bestCell - gap, cellTop + bestCell - gap);
             }
         }
+
+        /**
+         * Category bands: one rounded segment per maximal run of same-category
+         * tiles within a row, drawn behind the tiles. The grid itself stays
+         * continuous - a category can end mid-row and the next category's band
+         * starts at the next cell; a category that wraps gets a segment per row.
+         */
+        private void drawCategoryBands(Canvas canvas) {
+            int n = getChildCount();
+            if (n == 0 || lastCols == 0) {
+                return;
+            }
+            int hx = (cellW - cellSize) / 2 + gapPx - dp(2);
+            int hy = (cellH - cellSize) / 2 + gapPx - dp(2);
+            int min = dp(2);
+            if (hx < min) {
+                hx = min;
+            }
+            if (hy < min) {
+                hy = min;
+            }
+            int i = 0;
+            while (i < n) {
+                TileView first = (TileView) getChildAt(i);
+                String cat = first.app.category;
+                int row = i / lastCols;
+                int j = i;
+                while (j + 1 < n && (j + 1) / lastCols == row) {
+                    TileView next = (TileView) getChildAt(j + 1);
+                    if (!next.app.category.equals(cat)) {
+                        break;
+                    }
+                    j++;
+                }
+                TileView last = (TileView) getChildAt(j);
+                bandRect.set(first.getLeft() - hx, first.getTop() - hy,
+                        last.getRight() + hx, last.getBottom() + hy);
+                bandPaint.setColor(CategoryStore.colorFor(getContext(), cat));
+                float radius = Math.min(dp(16),
+                        Math.min(bandRect.width(), bandRect.height()) / 2f);
+                canvas.drawRoundRect(bandRect, radius, radius, bandPaint);
+                i = j + 1;
+            }
+        }
+
+        @Override
+        protected void dispatchDraw(Canvas canvas) {
+            drawCategoryBands(canvas);
+            super.dispatchDraw(canvas);
+        }
     }
 
     /**
-     * One tile: just the app's own icon, centered, no background square and no
-     * name label (icons only per the owner's design call; names still show in
-     * settings). No category colors; grouping is expressed by order only. The
-     * icon takes most of the cell so it reads larger without changing the grid.
+     * One tile: just the app's own icon, centered, no per-tile background
+     * square and no name label (icons only per the owner's design call; names
+     * still show in settings). The category band behind it is drawn by
+     * GridArea. The icon takes most of the cell so it reads larger without
+     * changing the grid.
      */
     private static final class TileView extends View {
 
+        private final AppInfo app;
         private final Drawable icon;
         private int iconSize;
         private int iconTop;
 
         TileView(Context context, AppInfo app) {
             super(context);
+            this.app = app;
             this.icon = app.icon;
         }
 

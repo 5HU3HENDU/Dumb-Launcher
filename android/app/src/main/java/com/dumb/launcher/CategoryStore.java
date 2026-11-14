@@ -23,6 +23,13 @@ public final class CategoryStore {
     private static final String PREFS = "dumb_launcher_categories";
     private static final String KEY_ORDER = "category_order";
     private static final String KEY_MEMBERS = "membership";
+    private static final String KEY_COLORS = "category_colors";
+
+    /** Default pale band colors, assigned by name hash when the user has not picked one. */
+    private static final int[] PALETTE = {
+            0xFFDBEAFE, 0xFFDCF5E4, 0xFFFEF3CD, 0xFFFCDEE9,
+            0xFFE9E2FD, 0xFFD7F2F0, 0xFFFDE8D8, 0xFFECECF1
+    };
 
     /** Name of the fallback bucket for apps with no other membership. */
     public static final String OTHER = "Other";
@@ -163,6 +170,7 @@ public final class CategoryStore {
         }
         cats.set(idx, newName);
         saveOrder(c, cats);
+        moveColor(c, oldName, newName);
         SharedPreferences p = prefs(c);
         try {
             JSONObject obj = new JSONObject(p.getString(KEY_MEMBERS, "{}"));
@@ -210,6 +218,7 @@ public final class CategoryStore {
             return false;
         }
         saveOrder(c, cats);
+        dropColor(c, name);
         SharedPreferences p = prefs(c);
         try {
             JSONObject obj = new JSONObject(p.getString(KEY_MEMBERS, "{}"));
@@ -239,6 +248,63 @@ public final class CategoryStore {
             // stale names still resolve to Other on read
         }
         return true;
+    }
+
+    /** The band color for one category: the user's pick, else a stable palette default. */
+    public static int colorFor(Context c, String name) {
+        SharedPreferences p = prefs(c);
+        try {
+            JSONObject obj = new JSONObject(p.getString(KEY_COLORS, "{}"));
+            if (obj.has(name)) {
+                return obj.getInt(name);
+            }
+        } catch (JSONException ignored) {
+            // fall through to the default
+        }
+        return PALETTE[Math.abs(name.hashCode()) % PALETTE.length];
+    }
+
+    /** Store the user's band color pick for one category (Other included). */
+    public static void setColor(Context c, String name, int color) {
+        SharedPreferences p = prefs(c);
+        JSONObject obj;
+        try {
+            obj = new JSONObject(p.getString(KEY_COLORS, "{}"));
+        } catch (JSONException e) {
+            obj = new JSONObject();
+        }
+        try {
+            obj.put(name, color);
+        } catch (JSONException ignored) {
+            return;
+        }
+        p.edit().putString(KEY_COLORS, obj.toString()).apply();
+    }
+
+    private static void moveColor(Context c, String oldName, String newName) {
+        int color = colorFor(c, oldName);
+        SharedPreferences p = prefs(c);
+        try {
+            JSONObject obj = new JSONObject(p.getString(KEY_COLORS, "{}"));
+            obj.remove(oldName);
+            obj.put(newName, color);
+            p.edit().putString(KEY_COLORS, obj.toString()).apply();
+        } catch (JSONException ignored) {
+            // color carry-over is best-effort
+        }
+    }
+
+    private static void dropColor(Context c, String name) {
+        SharedPreferences p = prefs(c);
+        try {
+            JSONObject obj = new JSONObject(p.getString(KEY_COLORS, "{}"));
+            if (obj.has(name)) {
+                obj.remove(name);
+                p.edit().putString(KEY_COLORS, obj.toString()).apply();
+            }
+        } catch (JSONException ignored) {
+            // no stored color, nothing to drop
+        }
     }
 
     /** Store the user's membership choice for one app key, in home order. */
