@@ -33,7 +33,8 @@ import java.util.Set;
  * Launcher settings with two tabs:
  *
  *   Categories - the category list in home-screen order: add a category, move
- *   one up or down, or tap one to choose which apps belong to it.
+ *   one up or down, or edit one (pencil button: rename, or delete - its apps
+ *   move to Other; Other itself cannot be renamed or deleted).
  *
  *   Apps - every installed app A-Z (work copies marked " (Work)") with a
  *   category dropdown per app; choosing one moves the app there.
@@ -214,24 +215,25 @@ public class SettingsActivity extends Activity {
                     android.R.layout.simple_spinner_item, names);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             spinner.setAdapter(adapter);
+            final int[] current = { -1 };
             String now = CategoryStore.categoriesOf(this, app.key).get(0);
             for (int i = 0; i < names.length; i++) {
                 if (names[i].equals(now)) {
+                    current[0] = i;
                     spinner.setSelection(i, false);
                     break;
                 }
             }
             spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                private boolean firstFire = true;
-
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view,
                                            int position, long id) {
-                    // Spinner fires once when the selection is set up; ignore that.
-                    if (firstFire) {
-                        firstFire = false;
+                    // Save only a real change; the synthetic setup event carries
+                    // the current position and is ignored however it arrives.
+                    if (position == current[0]) {
                         return;
                     }
+                    current[0] = position;
                     Set<String> next = new LinkedHashSet<>();
                     next.add(names[position]);
                     CategoryStore.setMembership(SettingsActivity.this, app.key, next);
@@ -316,8 +318,66 @@ public class SettingsActivity extends Activity {
             row.addView(text, new LinearLayout.LayoutParams(
                     0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
+            // Rename affordance; Other is the fixed fallback bucket and keeps its name.
+            if (!CategoryStore.OTHER.equals(name)) {
+                Button edit = new Button(this);
+                edit.setText("✎");
+                edit.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        promptEditCategory(name);
+                    }
+                });
+                row.addView(edit, new LinearLayout.LayoutParams(dp(48), dp(44)));
+            }
+
             list.addView(row, new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         }
+    }
+
+    /** Edit dialog for one category: rename it, or delete it (apps move to Other). */
+    private void promptEditCategory(final String oldName) {
+        final EditText input = new EditText(this);
+        input.setText(oldName);
+        input.setSingleLine(true);
+        input.setSelection(input.getText().length());
+        new AlertDialog.Builder(this)
+                .setTitle("Edit category")
+                .setView(input)
+                .setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String next = input.getText().toString();
+                        if (CategoryStore.renameCategory(SettingsActivity.this, oldName, next)) {
+                            renderList();
+                        }
+                    }
+                })
+                .setNeutralButton("Delete", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        confirmDeleteCategory(oldName);
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    /** Confirm, then delete a category; its apps fall back to Other. */
+    private void confirmDeleteCategory(final String name) {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete " + name + "?")
+                .setMessage("Apps in this category move to Other.")
+                .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (CategoryStore.removeCategory(SettingsActivity.this, name)) {
+                            renderList();
+                        }
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 }

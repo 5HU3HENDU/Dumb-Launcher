@@ -1,17 +1,21 @@
-# Dumb Launcher (Android source)
+# Dumb Launcher (Android)
 
-Native Android home launcher. One viewport-filling grid of installed apps,
-grouped by category (A-Z inside each), no scrolling. Neutral tiles, real app
-icons. Settings (gear or long-press): create categories, move apps between
-them (one category per app), change category order. Edits persist in
-SharedPreferences.
+Native Android home launcher matching the Dumb Launcher webpage: one viewport-filling
+grid of installed apps grouped by category (A-Z within category), real app icons,
+no scrolling (tiles shrink to fit), clock/date header and category legend.
 
-Build: JDK 17 + Android SDK (platform 34, build-tools 34.0.0) + Gradle 8.5.
-`gradle assembleRelease`. Release signing reads `keystore.properties`
-(keystoreFile/storePassword/keyAlias/keyPassword) from this directory; the
-file and keystore are gitignored and live in the owner's private custody
-(encrypted backup in Drive, passphrase in Instinct vault), never in this repo.
+## Build
+Requires JDK 17, Android SDK platform 34 + build-tools 34, Gradle 8.5.
 
-- CategoryMap.java: built-in seed category names/order and package->category map.
-- CategoryStore.java: user overrides (order + membership), persisted.
-- MainActivity.java: home grid. SettingsActivity/CategoryAppsActivity: settings.
+    gradle assembleRelease
+
+Unsigned release APK lands in app/build/outputs/apk/release/. To sign, place a
+keystore.properties next to settings.gradle (see .gitignore note) and rebuild.
+
+## Layout
+- MainActivity.java: home UI, grid layout math, clock, Personal/Work profile toggle.
+- ProfileApps.java: per-profile app enumeration via LauncherApps, profile-aware keys.
+- CategoryMap.java: category names and package-to-category seed map (editable data).
+- CategoryStore.java: persisted category order, renames, deletions and app membership.
+- SettingsActivity.java: two settings tabs - Apps (category dropdown per app),
+  Categories (add, reorder, rename, delete; deleted categories' apps move to Other).

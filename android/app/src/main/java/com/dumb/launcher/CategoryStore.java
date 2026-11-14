@@ -135,6 +135,83 @@ public final class CategoryStore {
         return out;
     }
 
+    /**
+     * Rename a category in the order list and in every stored membership.
+     * Other is the fixed fallback bucket and cannot be renamed; empty or
+     * duplicate names are rejected. Returns true when the rename happened.
+     */
+    public static boolean renameCategory(Context c, String oldName, String newName) {
+        newName = newName == null ? "" : newName.trim();
+        if (newName.isEmpty() || OTHER.equals(oldName)) {
+            return false;
+        }
+        List<String> cats = categories(c);
+        int idx = -1;
+        for (int i = 0; i < cats.size(); i++) {
+            if (cats.get(i).equals(oldName)) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < 0) {
+            return false;
+        }
+        for (String n : cats) {
+            if (!n.equals(oldName) && n.equalsIgnoreCase(newName)) {
+                return false;
+            }
+        }
+        cats.set(idx, newName);
+        saveOrder(c, cats);
+        SharedPreferences p = prefs(c);
+        try {
+            JSONObject obj = new JSONObject(p.getString(KEY_MEMBERS, "{}"));
+            JSONArray keys = obj.names();
+            if (keys != null) {
+                for (int i = 0; i < keys.length(); i++) {
+                    String k = keys.getString(i);
+                    JSONArray arr = obj.getJSONArray(k);
+                    JSONArray next = new JSONArray();
+                    for (int j = 0; j < arr.length(); j++) {
+                        String n = arr.getString(j);
+                        next.put(n.equals(oldName) ? newName : n);
+                    }
+                    obj.put(k, next);
+                }
+                p.edit().putString(KEY_MEMBERS, obj.toString()).apply();
+            }
+        } catch (JSONException ignored) {
+            // membership rewrite is best-effort; stale names resolve to Other
+        }
+        return true;
+    }
+
+    /**
+     * Delete a category from the order list. Stored memberships that name it
+     * resolve to Other on the next read (categoriesOf filters names that no
+     * longer exist), so its apps land in Other without a data rewrite.
+     * Other itself cannot be deleted. Returns true when removed.
+     */
+    public static boolean removeCategory(Context c, String name) {
+        if (OTHER.equals(name)) {
+            return false;
+        }
+        List<String> cats = categories(c);
+        boolean removed = false;
+        for (int i = 0; i < cats.size(); i++) {
+            if (cats.get(i).equals(name)) {
+                cats.remove(i);
+                removed = true;
+                break;
+            }
+        }
+        if (!removed) {
+            return false;
+        }
+        saveOrder(c, cats);
+        return true;
+    }
+
     /** Store the user's membership choice for one app key, in home order. */
     public static void setMembership(Context c, String key, Set<String> cats) {
         SharedPreferences p = prefs(c);
