@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f0f0f">
+<meta name="description" content="Dumb Launcher — all 100 apps on one screen. Tap any tile to open the app. No scroll, fixed spots.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://5hu3hendu.github.io/Dumb-Launcher/">
+<meta property="og:title" content="Dumb Launcher">
+<meta property="og:description" content="All 100 apps on one screen. Tap a tile to open the app.">
+<meta property="og:image" content="https://dummyimage.com/1200x630/ff0000/ffffff&amp;text=Dumb+Launcher">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Dumb Launcher">
+<meta name="twitter:description" content="All 100 apps on one screen. Tap a tile to open the app.">
+<meta name="twitter:image" content="https://dummyimage.com/1200x630/ff0000/ffffff&amp;text=Dumb+Launcher">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Dumb Launcher</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #0f0f0f; color: #f1f1f1;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  header { padding: 14px 14px 6px; }
+  #clock { font-size: 34px; font-weight: 700; line-height: 1.05; letter-spacing: -0.5px; }
+  #date { font-size: 13px; color: #a1a1a1; margin-top: 2px; }
+  main { flex: 1; min-height: 0; padding: 6px 10px; }
+  .grid {
+    display: grid; grid-template-columns: repeat(8, 1fr); grid-auto-rows: 1fr;
+    gap: 6px; height: 100%;
+  }
+  .tile { display: block; text-decoration: none; min-width: 0; min-height: 0; border-radius: 12px; }
+  .tile:active { transform: scale(0.92); }
+  .icon {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%; border-radius: 12px;
+    color: #fff; font-weight: 700; font-size: 19px; letter-spacing: 0.5px;
+  }
+  footer { padding: 8px 12px 12px; }
+  .legend {
+    display: flex; gap: 12px; overflow-x: auto; scrollbar-width: none;
+    font-size: 11px; color: #a1a1a1; white-space: nowrap;
+  }
+  .legend::-webkit-scrollbar { display: none; }
+  .leg { display: inline-flex; align-items: center; gap: 4px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  @media (prefers-color-scheme: light) {
+    body { background: #f5f5f4; color: #111; }
+    #date { color: #666; }
+    .legend { color: #666; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div id="clock">--:--</div>
+  <div id="date"></div>
+</header>
+<main>
+  <div class="grid">
+<a class="tile" href="https://www.facebook.com/" target="_blank" rel="noopener" aria-label="Open Facebook" title="Facebook"><span class="icon" style="background:linear-gradient(145deg,rgb(255,99,154),rgb(208,51,106))">FA</span></a>
+<a class="tile" href="https://www.instagram.com/" target="_blank" rel="noopener" aria-label="Open Instagram" title="Instagram"><span class="icon" style="background:linear-gradient(145deg,rgb(255,99,154),rgb(208,51,106))">IN</span></a>
+<a class="tile" href="https://www.linkedin.com/" target="_blank" rel="noopener" aria-label="Open LinkedIn" title="LinkedIn"><span class="icon" style="background:linear-gradient(145deg,rgb(255,99,154),rgb(208,51,106))">LI</span></a>
+<a class="tile" href="https://mastodon.social/" target="_blank" rel="noopener" aria-label="Open Mastodon" title="Mastodon"><span class="icon" style="background:linear-gradient(145deg,rgb(255,99,154),rgb(208,51,106))">MA</span></a>
+<a class="tile" href="https://www.pinterest.com/" target="_blank" rel="noopener" aria-label="Open Pinterest" title="Pinterest"><span class="icon" style="background:linear-gradient(145deg,rgb(255,99,154),rgb(208,51,106))">PI</span></a>
+<a class="tile" href="https://www.quora.com/" target="_blank" rel="noopener" aria-label="Open Quora" title="Quora"><span class="icon" style="background:linear-gradient(145deg,rgb(255,99,154),rgb(208,51,106))">QU</span></a>
+<a class="tile" href="https://www.reddit.com/" target="_blank" rel="noopener" aria-label="Open Reddit" title="Reddit"><span class="icon" style="background:linear-gradient(145deg,rgb(255,99,154),rgb(208,51,106))">RE</span></a>
+<a class="tile" href="https://www.snapchat.com/" target="_blank" rel="noopener" aria-label="Open Snapchat" title="Snapchat"><span class="icon" style="background:linear-gradient(145deg,rgb(255,99,154),rgb(208,51,106))">SN</span></a>
+<a class="tile" href="https://www.threads.net/" target="_blank" rel="noopener" aria-label="Open Threads" title="Threads"><span class="icon" style="background:linear-gradient(145deg,rgb(255,99,154),rgb(208,51,106))">TH</span></a>
+<a class="tile" href="https://x.com/" target="_blank" rel="noopener" aria-label="Open X" title="X"><span class="icon" style="background:linear-gradient(145deg,rgb(255,99,154),rgb(208,51,106))">X</span></a>
+<a class="tile" href="https://discord.com/" target="_blank" rel="noopener" aria-label="Open Discord" title="Discord"><span class="icon" style="background:linear-gradient(145deg,rgb(44,209,132),rgb(0,161,84))">DI</span></a>
+<a class="tile" href="https://line.me/" target="_blank" rel="noopener" aria-label="Open Line" title="Line"><span class="icon" style="background:linear-gradient(145deg,rgb(44,209,132),rgb(0,161,84))">LI</span></a>
+<a class="tile" href="https://messages.google.com/" target="_blank" rel="noopener" aria-label="Open Messages" title="Messages"><span class="icon" style="background:linear-gradient(145deg,rgb(44,209,132),rgb(0,161,84))">ME</span></a>
+<a class="tile" href="https://www.messenger.com/" target="_blank" rel="noopener" aria-label="Open Messenger" title="Messenger"><span class="icon" style="background:linear-gradient(145deg,rgb(44,209,132),rgb(0,161,84))">ME</span></a>
+<a class="tile" href="https://signal.org/" target="_blank" rel="noopener" aria-label="Open Signal" title="Signal"><span class="icon" style="background:linear-gradient(145deg,rgb(44,209,132),rgb(0,161,84))">SI</span></a>
+<a class="tile" href="https://slack.com/" target="_blank" rel="noopener" aria-label="Open Slack" title="Slack"><span class="icon" style="background:linear-gradient(145deg,rgb(44,209,132),rgb(0,161,84))">SL</span></a>
+<a class="tile" href="https://t.me/" target="_blank" rel="noopener" aria-label="Open Telegram" title="Telegram"><span class="icon" style="background:linear-gradient(145deg,rgb(44,209,132),rgb(0,161,84))">TE</span></a>
+<a class="tile" href="https://www.viber.com/" target="_blank" rel="noopener" aria-label="Open Viber" title="Viber"><span class="icon" style="background:linear-gradient(145deg,rgb(44,209,132),rgb(0,161,84))">VI</span></a>
+<a class="tile" href="https://www.wechat.com/" target="_blank" rel="noopener" aria-label="Open WeChat" title="WeChat"><span class="icon" style="background:linear-gradient(145deg,rgb(44,209,132),rgb(0,161,84))">WE</span></a>
+<a class="tile" href="https://wa.me/" target="_blank" rel="noopener" aria-label="Open WhatsApp" title="WhatsApp"><span class="icon" style="background:linear-gradient(145deg,rgb(44,209,132),rgb(0,161,84))">WH</span></a>
+<a class="tile" href="https://cred.club/" target="_blank" rel="noopener" aria-label="Open CRED" title="CRED"><span class="icon" style="background:linear-gradient(145deg,rgb(40,185,136),rgb(0,137,88))">CR</span></a>
+<a class="tile" href="https://pay.google.com/" target="_blank" rel="noopener" aria-label="Open Google Pay" title="Google Pay"><span class="icon" style="background:linear-gradient(145deg,rgb(40,185,136),rgb(0,137,88))">GP</span></a>
+<a class="tile" href="https://groww.in/" target="_blank" rel="noopener" aria-label="Open Groww" title="Groww"><span class="icon" style="background:linear-gradient(145deg,rgb(40,185,136),rgb(0,137,88))">GR</span></a>
+<a class="tile" href="https://www.hdfcbank.com/" target="_blank" rel="noopener" aria-label="Open HDFC Bank" title="HDFC Bank"><span class="icon" style="background:linear-gradient(145deg,rgb(40,185,136),rgb(0,137,88))">HB</span></a>
+<a class="tile" href="https://www.paypal.com/" target="_blank" rel="noopener" aria-label="Open PayPal" title="PayPal"><span class="icon" style="background:linear-gradient(145deg,rgb(40,185,136),rgb(0,137,88))">PA</span></a>
+<a class="tile" href="https://paytm.com/" target="_blank" rel="noopener" aria-label="Open Paytm" title="Paytm"><span class="icon" style="background:linear-gradient(145deg,rgb(40,185,136),rgb(0,137,88))">PA</span></a>
+<a class="tile" href="https://www.phonepe.com/" target="_blank" rel="noopener" aria-label="Open PhonePe" title="PhonePe"><span class="icon" style="background:linear-gradient(145deg,rgb(40,185,136),rgb(0,137,88))">PH</span></a>
+<a class="tile" href="https://www.sbiyono.sbi/" target="_blank" rel="noopener" aria-label="Open SBI YONO" title="SBI YONO"><span class="icon" style="background:linear-gradient(145deg,rgb(40,185,136),rgb(0,137,88))">SY</span></a>
+<a class="tile" href="https://wise.com/" target="_blank" rel="noopener" aria-label="Open Wise" title="Wise"><span class="icon" style="background:linear-gradient(145deg,rgb(40,185,136),rgb(0,137,88))">WI</span></a>
+<a class="tile" href="https://kite.zerodha.com/" target="_blank" rel="noopener" aria-label="Open Zerodha" title="Zerodha"><span class="icon" style="background:linear-gradient(145deg,rgb(40,185,136),rgb(0,137,88))">ZE</span></a>
+<a class="tile" href="https://www.ajio.com/" target="_blank" rel="noopener" aria-label="Open Ajio" title="Ajio"><span class="icon" style="background:linear-gradient(145deg,rgb(255,185,26),rgb(223,137,0))">AJ</span></a>
+<a class="tile" href="https://www.amazon.in/" target="_blank" rel="noopener" aria-label="Open Amazon" title="Amazon"><span class="icon" style="background:linear-gradient(145deg,rgb(255,185,26),rgb(223,137,0))">AM</span></a>
+<a class="tile" href="https://www.bigbasket.com/" target="_blank" rel="noopener" aria-label="Open BigBasket" title="BigBasket"><span class="icon" style="background:linear-gradient(145deg,rgb(255,185,26),rgb(223,137,0))">BI</span></a>
+<a class="tile" href="https://blinkit.com/" target="_blank" rel="noopener" aria-label="Open Blinkit" title="Blinkit"><span class="icon" style="background:linear-gradient(145deg,rgb(255,185,26),rgb(223,137,0))">BL</span></a>
+<a class="tile" href="https://www.ebay.com/" target="_blank" rel="noopener" aria-label="Open eBay" title="eBay"><span class="icon" style="background:linear-gradient(145deg,rgb(255,185,26),rgb(223,137,0))">EB</span></a>
+<a class="tile" href="https://www.flipkart.com/" target="_blank" rel="noopener" aria-label="Open Flipkart" title="Flipkart"><span class="icon" style="background:linear-gradient(145deg,rgb(255,185,26),rgb(223,137,0))">FL</span></a>
+<a class="tile" href="https://www.ikea.com/in/en/" target="_blank" rel="noopener" aria-label="Open IKEA" title="IKEA"><span class="icon" style="background:linear-gradient(145deg,rgb(255,185,26),rgb(223,137,0))">IK</span></a>
+<a class="tile" href="https://www.meesho.com/" target="_blank" rel="noopener" aria-label="Open Meesho" title="Meesho"><span class="icon" style="background:linear-gradient(145deg,rgb(255,185,26),rgb(223,137,0))">ME</span></a>
+<a class="tile" href="https://www.myntra.com/" target="_blank" rel="noopener" aria-label="Open Myntra" title="Myntra"><span class="icon" style="background:linear-gradient(145deg,rgb(255,185,26),rgb(223,137,0))">MY</span></a>
+<a class="tile" href="https://www.nykaa.com/" target="_blank" rel="noopener" aria-label="Open Nykaa" title="Nykaa"><span class="icon" style="background:linear-gradient(145deg,rgb(255,185,26),rgb(223,137,0))">NY</span></a>
+<a class="tile" href="https://www.burgerking.in/" target="_blank" rel="noopener" aria-label="Open Burger King" title="Burger King"><span class="icon" style="background:linear-gradient(145deg,rgb(255,115,38),rgb(210,67,0))">BK</span></a>
+<a class="tile" href="https://www.dominos.co.in/" target="_blank" rel="noopener" aria-label="Open Domino's" title="Domino's"><span class="icon" style="background:linear-gradient(145deg,rgb(255,115,38),rgb(210,67,0))">DO</span></a>
+<a class="tile" href="https://www.eatsure.com/" target="_blank" rel="noopener" aria-label="Open EatSure" title="EatSure"><span class="icon" style="background:linear-gradient(145deg,rgb(255,115,38),rgb(210,67,0))">EA</span></a>
+<a class="tile" href="https://www.freshmenu.com/" target="_blank" rel="noopener" aria-label="Open FreshMenu" title="FreshMenu"><span class="icon" style="background:linear-gradient(145deg,rgb(255,115,38),rgb(210,67,0))">FR</span></a>
+<a class="tile" href="https://www.licious.in/" target="_blank" rel="noopener" aria-label="Open Licious" title="Licious"><span class="icon" style="background:linear-gradient(145deg,rgb(255,115,38),rgb(210,67,0))">LI</span></a>
+<a class="tile" href="https://www.mcdonaldsindia.com/" target="_blank" rel="noopener" aria-label="Open McDonald's" title="McDonald's"><span class="icon" style="background:linear-gradient(145deg,rgb(255,115,38),rgb(210,67,0))">MC</span></a>
+<a class="tile" href="https://www.pizzahut.co.in/" target="_blank" rel="noopener" aria-label="Open Pizza Hut" title="Pizza Hut"><span class="icon" style="background:linear-gradient(145deg,rgb(255,115,38),rgb(210,67,0))">PH</span></a>
+<a class="tile" href="https://www.starbucks.in/" target="_blank" rel="noopener" aria-label="Open Starbucks" title="Starbucks"><span class="icon" style="background:linear-gradient(145deg,rgb(255,115,38),rgb(210,67,0))">ST</span></a>
+<a class="tile" href="https://www.swiggy.com/" target="_blank" rel="noopener" aria-label="Open Swiggy" title="Swiggy"><span class="icon" style="background:linear-gradient(145deg,rgb(255,115,38),rgb(210,67,0))">SW</span></a>
+<a class="tile" href="https://www.zomato.com/" target="_blank" rel="noopener" aria-label="Open Zomato" title="Zomato"><span class="icon" style="background:linear-gradient(145deg,rgb(255,115,38),rgb(210,67,0))">ZO</span></a>
+<a class="tile" href="https://www.airbnb.co.in/" target="_blank" rel="noopener" aria-label="Open Airbnb" title="Airbnb"><span class="icon" style="background:linear-gradient(145deg,rgb(54,152,240),rgb(6,104,192))">AI</span></a>
+<a class="tile" href="https://www.booking.com/" target="_blank" rel="noopener" aria-label="Open Booking.com" title="Booking.com"><span class="icon" style="background:linear-gradient(145deg,rgb(54,152,240),rgb(6,104,192))">BO</span></a>
+<a class="tile" href="https://maps.google.com/" target="_blank" rel="noopener" aria-label="Open Google Maps" title="Google Maps"><span class="icon" style="background:linear-gradient(145deg,rgb(54,152,240),rgb(6,104,192))">GM</span></a>
+<a class="tile" href="https://www.irctc.co.in/" target="_blank" rel="noopener" aria-label="Open IRCTC Rail" title="IRCTC Rail"><span class="icon" style="background:linear-gradient(145deg,rgb(54,152,240),rgb(6,104,192))">IR</span></a>
+<a class="tile" href="https://www.ixigo.com/" target="_blank" rel="noopener" aria-label="Open ixigo" title="ixigo"><span class="icon" style="background:linear-gradient(145deg,rgb(54,152,240),rgb(6,104,192))">IX</span></a>
+<a class="tile" href="https://www.makemytrip.com/" target="_blank" rel="noopener" aria-label="Open MakeMyTrip" title="MakeMyTrip"><span class="icon" style="background:linear-gradient(145deg,rgb(54,152,240),rgb(6,104,192))">MA</span></a>
+<a class="tile" href="https://www.olacabs.com/" target="_blank" rel="noopener" aria-label="Open Ola" title="Ola"><span class="icon" style="background:linear-gradient(145deg,rgb(54,152,240),rgb(6,104,192))">OL</span></a>
+<a class="tile" href="https://www.rapido.bike/" target="_blank" rel="noopener" aria-label="Open Rapido" title="Rapido"><span class="icon" style="background:linear-gradient(145deg,rgb(54,152,240),rgb(6,104,192))">RA</span></a>
+<a class="tile" href="https://www.redbus.in/" target="_blank" rel="noopener" aria-label="Open redBus" title="redBus"><span class="icon" style="background:linear-gradient(145deg,rgb(54,152,240),rgb(6,104,192))">RE</span></a>
+<a class="tile" href="https://www.uber.com/" target="_blank" rel="noopener" aria-label="Open Uber" title="Uber"><span class="icon" style="background:linear-gradient(145deg,rgb(54,152,240),rgb(6,104,192))">UB</span></a>
+<a class="tile" href="https://tv.apple.com/" target="_blank" rel="noopener" aria-label="Open Apple TV+" title="Apple TV+"><span class="icon" style="background:linear-gradient(145deg,rgb(250,75,75),rgb(202,27,27))">AT</span></a>
+<a class="tile" href="https://www.jiohotstar.com/" target="_blank" rel="noopener" aria-label="Open JioHotstar" title="JioHotstar"><span class="icon" style="background:linear-gradient(145deg,rgb(250,75,75),rgb(202,27,27))">JI</span></a>
+<a class="tile" href="https://www.mxplayer.in/" target="_blank" rel="noopener" aria-label="Open MX Player" title="MX Player"><span class="icon" style="background:linear-gradient(145deg,rgb(250,75,75),rgb(202,27,27))">MP</span></a>
+<a class="tile" href="https://www.netflix.com/" target="_blank" rel="noopener" aria-label="Open Netflix" title="Netflix"><span class="icon" style="background:linear-gradient(145deg,rgb(250,75,75),rgb(202,27,27))">NE</span></a>
+<a class="tile" href="https://www.primevideo.com/" target="_blank" rel="noopener" aria-label="Open Prime Video" title="Prime Video"><span class="icon" style="background:linear-gradient(145deg,rgb(250,75,75),rgb(202,27,27))">PV</span></a>
+<a class="tile" href="https://www.sonyliv.com/" target="_blank" rel="noopener" aria-label="Open SonyLIV" title="SonyLIV"><span class="icon" style="background:linear-gradient(145deg,rgb(250,75,75),rgb(202,27,27))">SO</span></a>
+<a class="tile" href="https://www.twitch.tv/" target="_blank" rel="noopener" aria-label="Open Twitch" title="Twitch"><span class="icon" style="background:linear-gradient(145deg,rgb(250,75,75),rgb(202,27,27))">TW</span></a>
+<a class="tile" href="https://vimeo.com/" target="_blank" rel="noopener" aria-label="Open Vimeo" title="Vimeo"><span class="icon" style="background:linear-gradient(145deg,rgb(250,75,75),rgb(202,27,27))">VI</span></a>
+<a class="tile" href="https://www.youtube.com/" target="_blank" rel="noopener" aria-label="Open YouTube" title="YouTube"><span class="icon" style="background:linear-gradient(145deg,rgb(250,75,75),rgb(202,27,27))">YO</span></a>
+<a class="tile" href="https://www.zee5.com/" target="_blank" rel="noopener" aria-label="Open ZEE5" title="ZEE5"><span class="icon" style="background:linear-gradient(145deg,rgb(250,75,75),rgb(202,27,27))">ZE</span></a>
+<a class="tile" href="https://music.amazon.in/" target="_blank" rel="noopener" aria-label="Open Amazon Music" title="Amazon Music"><span class="icon" style="background:linear-gradient(145deg,rgb(138,98,255),rgb(90,50,210))">AM</span></a>
+<a class="tile" href="https://music.apple.com/" target="_blank" rel="noopener" aria-label="Open Apple Music" title="Apple Music"><span class="icon" style="background:linear-gradient(145deg,rgb(138,98,255),rgb(90,50,210))">AM</span></a>
+<a class="tile" href="https://www.audible.in/" target="_blank" rel="noopener" aria-label="Open Audible" title="Audible"><span class="icon" style="background:linear-gradient(145deg,rgb(138,98,255),rgb(90,50,210))">AU</span></a>
+<a class="tile" href="https://gaana.com/" target="_blank" rel="noopener" aria-label="Open Gaana" title="Gaana"><span class="icon" style="background:linear-gradient(145deg,rgb(138,98,255),rgb(90,50,210))">GA</span></a>
+<a class="tile" href="https://www.hungama.com/music/" target="_blank" rel="noopener" aria-label="Open Hungama Music" title="Hungama Music"><span class="icon" style="background:linear-gradient(145deg,rgb(138,98,255),rgb(90,50,210))">HM</span></a>
+<a class="tile" href="https://www.jiosaavn.com/" target="_blank" rel="noopener" aria-label="Open JioSaavn" title="JioSaavn"><span class="icon" style="background:linear-gradient(145deg,rgb(138,98,255),rgb(90,50,210))">JI</span></a>
+<a class="tile" href="https://www.shazam.com/" target="_blank" rel="noopener" aria-label="Open Shazam" title="Shazam"><span class="icon" style="background:linear-gradient(145deg,rgb(138,98,255),rgb(90,50,210))">SH</span></a>
+<a class="tile" href="https://soundcloud.com/" target="_blank" rel="noopener" aria-label="Open SoundCloud" title="SoundCloud"><span class="icon" style="background:linear-gradient(145deg,rgb(138,98,255),rgb(90,50,210))">SO</span></a>
+<a class="tile" href="https://open.spotify.com/" target="_blank" rel="noopener" aria-label="Open Spotify" title="Spotify"><span class="icon" style="background:linear-gradient(145deg,rgb(138,98,255),rgb(90,50,210))">SP</span></a>
+<a class="tile" href="https://music.youtube.com/" target="_blank" rel="noopener" aria-label="Open YouTube Music" title="YouTube Music"><span class="icon" style="background:linear-gradient(145deg,rgb(138,98,255),rgb(90,50,210))">YM</span></a>
+<a class="tile" href="https://calendar.google.com/" target="_blank" rel="noopener" aria-label="Open Calendar" title="Calendar"><span class="icon" style="background:linear-gradient(145deg,rgb(92,125,255),rgb(44,77,213))">CA</span></a>
+<a class="tile" href="https://docs.google.com/" target="_blank" rel="noopener" aria-label="Open Docs" title="Docs"><span class="icon" style="background:linear-gradient(145deg,rgb(92,125,255),rgb(44,77,213))">DO</span></a>
+<a class="tile" href="https://www.dropbox.com/" target="_blank" rel="noopener" aria-label="Open Dropbox" title="Dropbox"><span class="icon" style="background:linear-gradient(145deg,rgb(92,125,255),rgb(44,77,213))">DR</span></a>
+<a class="tile" href="https://mail.google.com/" target="_blank" rel="noopener" aria-label="Open Gmail" title="Gmail"><span class="icon" style="background:linear-gradient(145deg,rgb(92,125,255),rgb(44,77,213))">GM</span></a>
+<a class="tile" href="https://drive.google.com/" target="_blank" rel="noopener" aria-label="Open Google Drive" title="Google Drive"><span class="icon" style="background:linear-gradient(145deg,rgb(92,125,255),rgb(44,77,213))">GD</span></a>
+<a class="tile" href="https://meet.google.com/" target="_blank" rel="noopener" aria-label="Open Google Meet" title="Google Meet"><span class="icon" style="background:linear-gradient(145deg,rgb(92,125,255),rgb(44,77,213))">GM</span></a>
+<a class="tile" href="https://www.notion.so/" target="_blank" rel="noopener" aria-label="Open Notion" title="Notion"><span class="icon" style="background:linear-gradient(145deg,rgb(92,125,255),rgb(44,77,213))">NO</span></a>
+<a class="tile" href="https://onedrive.live.com/" target="_blank" rel="noopener" aria-label="Open OneDrive" title="OneDrive"><span class="icon" style="background:linear-gradient(145deg,rgb(92,125,255),rgb(44,77,213))">ON</span></a>
+<a class="tile" href="https://sheets.google.com/" target="_blank" rel="noopener" aria-label="Open Sheets" title="Sheets"><span class="icon" style="background:linear-gradient(145deg,rgb(92,125,255),rgb(44,77,213))">SH</span></a>
+<a class="tile" href="https://zoom.us/" target="_blank" rel="noopener" aria-label="Open Zoom" title="Zoom"><span class="icon" style="background:linear-gradient(145deg,rgb(92,125,255),rgb(44,77,213))">ZO</span></a>
+<a class="tile" href="intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.APP_CALCULATOR;end" target="_blank" rel="noopener" aria-label="Open Calculator" title="Calculator"><span class="icon" style="background:linear-gradient(145deg,rgb(160,168,176),rgb(112,120,128))">CA</span></a>
+<a class="tile" href="intent://#Intent;action=android.media.action.STILL_IMAGE_CAMERA;end" target="_blank" rel="noopener" aria-label="Open Camera" title="Camera"><span class="icon" style="background:linear-gradient(145deg,rgb(160,168,176),rgb(112,120,128))">CA</span></a>
+<a class="tile" href="https://www.google.com/" target="_blank" rel="noopener" aria-label="Open Chrome" title="Chrome"><span class="icon" style="background:linear-gradient(145deg,rgb(160,168,176),rgb(112,120,128))">CH</span></a>
+<a class="tile" href="intent://#Intent;action=android.intent.action.SHOW_ALARMS;end" target="_blank" rel="noopener" aria-label="Open Clock" title="Clock"><span class="icon" style="background:linear-gradient(145deg,rgb(160,168,176),rgb(112,120,128))">CL</span></a>
+<a class="tile" href="intent://#Intent;package=com.google.android.apps.nbu.files;end" target="_blank" rel="noopener" aria-label="Open Files" title="Files"><span class="icon" style="background:linear-gradient(145deg,rgb(160,168,176),rgb(112,120,128))">FI</span></a>
+<a class="tile" href="https://keep.google.com/" target="_blank" rel="noopener" aria-label="Open Notes" title="Notes"><span class="icon" style="background:linear-gradient(145deg,rgb(160,168,176),rgb(112,120,128))">NO</span></a>
+<a class="tile" href="https://passwords.google.com/" target="_blank" rel="noopener" aria-label="Open Passwords" title="Passwords"><span class="icon" style="background:linear-gradient(145deg,rgb(160,168,176),rgb(112,120,128))">PA</span></a>
+<a class="tile" href="https://photos.google.com/" target="_blank" rel="noopener" aria-label="Open Photos" title="Photos"><span class="icon" style="background:linear-gradient(145deg,rgb(160,168,176),rgb(112,120,128))">PH</span></a>
+<a class="tile" href="intent://#Intent;action=android.settings.SETTINGS;end" target="_blank" rel="noopener" aria-label="Open Settings" title="Settings"><span class="icon" style="background:linear-gradient(145deg,rgb(160,168,176),rgb(112,120,128))">SE</span></a>
+<a class="tile" href="https://www.google.com/search?q=weather" target="_blank" rel="noopener" aria-label="Open Weather" title="Weather"><span class="icon" style="background:linear-gradient(145deg,rgb(160,168,176),rgb(112,120,128))">WE</span></a>
+  </div>
+</main>
+<footer><div class="legend"><span class="leg"><span class="dot" style="background:#e64980"></span>Social</span><span class="leg"><span class="dot" style="background:#12b76a"></span>Chat</span><span class="leg"><span class="dot" style="background:#0e9f6e"></span>Money</span><span class="leg"><span class="dot" style="background:#f59f00"></span>Shopping</span><span class="leg"><span class="dot" style="background:#e8590c"></span>Food & Drink</span><span class="leg"><span class="dot" style="background:#1c7ed6"></span>Travel & Maps</span><span class="leg"><span class="dot" style="background:#e03131"></span>Video</span><span class="leg"><span class="dot" style="background:#7048e8"></span>Music & Audio</span><span class="leg"><span class="dot" style="background:#4263eb"></span>Work & Files</span><span class="leg"><span class="dot" style="background:#868e96"></span>Utilities</span></div></footer>
+<script>
+  function tick() {
+    var d = new Date();
+    var hh = String(d.getHours()).padStart(2, "0");
+    var mm = String(d.getMinutes()).padStart(2, "0");
+    document.getElementById("clock").textContent = hh + ":" + mm;
+    document.getElementById("date").textContent = d.toLocaleDateString("en-IN", {
+      weekday: "long", day: "numeric", month: "long"
+    });
+  }
+  tick();
+  setInterval(tick, 15000);
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+</script>
+</body>
+</html>

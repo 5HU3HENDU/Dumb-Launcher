@@ -1,0 +1,25 @@
+{
+  "name": "Dumb Launcher",
+  "short_name": "Launcher",
+  "description": "All 100 apps on one screen. Tap a tile to open the app.",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0f0f0f",
+  "background_color": "#0f0f0f",
+  "start_url": ".",
+  "scope": ".",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
