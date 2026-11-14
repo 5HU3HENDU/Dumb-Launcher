@@ -1,0 +1,156 @@
+package com.dumb.launcher;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * User-controlled category data: the appearance order, user-created categories,
+ * and per-app membership overrides. Persisted in SharedPreferences so edits
+ * survive process death and app updates. On first run the order and membership
+ * seed from CategoryMap's built-in data; after that, user edits win.
+ */
+public final class CategoryStore {
+
+    private static final String PREFS = "dumb_launcher_categories";
+    private static final String KEY_ORDER = "category_order";
+    private static final String KEY_MEMBERS = "membership";
+
+    /** Name of the fallback bucket for apps with no other membership. */
+    public static final String OTHER = "Other";
+
+    private CategoryStore() {
+    }
+
+    private static SharedPreferences prefs(Context c) {
+        return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+    }
+
+    /** Category names in home-screen appearance order. */
+    public static List<String> categories(Context c) {
+        String raw = prefs(c).getString(KEY_ORDER, null);
+        if (raw != null) {
+            try {
+                JSONArray arr = new JSONArray(raw);
+                List<String> out = new ArrayList<>();
+                for (int i = 0; i < arr.length(); i++) {
+                    out.add(arr.getString(i));
+                }
+                if (!out.isEmpty()) {
+                    return out;
+                }
+            } catch (JSONException ignored) {
+                // fall through to seed
+            }
+        }
+        return new ArrayList<>(Arrays.asList(CategoryMap.NAMES));
+    }
+
+    private static void saveOrder(Context c, List<String> names) {
+        JSONArray arr = new JSONArray();
+        for (String n : names) {
+            arr.put(n);
+        }
+        prefs(c).edit().putString(KEY_ORDER, arr.toString()).apply();
+    }
+
+    /** Add a new empty category at the end, unless the name already exists. */
+    public static void addCategory(Context c, String name) {
+        name = name == null ? "" : name.trim();
+        if (name.isEmpty()) {
+            return;
+        }
+        List<String> cats = categories(c);
+        for (String n : cats) {
+            if (n.equalsIgnoreCase(name)) {
+                return;
+            }
+        }
+        cats.add(name);
+        saveOrder(c, cats);
+    }
+
+    /** Move the category at index by delta (-1 = up, +1 = down). */
+    public static void moveCategory(Context c, int index, int delta) {
+        List<String> cats = categories(c);
+        int target = index + delta;
+        if (index < 0 || index >= cats.size() || target < 0 || target >= cats.size()) {
+            return;
+        }
+        String name = cats.remove(index);
+        cats.add(target, name);
+        saveOrder(c, cats);
+    }
+
+    private static boolean categoryExists(Context c, String name) {
+        for (String n : categories(c)) {
+            if (n.equals(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Categories this app belongs to: the user's override when one is stored,
+     * otherwise the built-in seed mapping, otherwise Other.
+     */
+    public static List<String> categoriesOf(Context c, String pkg) {
+        String raw = prefs(c).getString(KEY_MEMBERS, null);
+        if (raw != null) {
+            try {
+                JSONObject obj = new JSONObject(raw);
+                if (obj.has(pkg)) {
+                    JSONArray arr = obj.getJSONArray(pkg);
+                    List<String> out = new ArrayList<>();
+                    for (int i = 0; i < arr.length(); i++) {
+                        String n = arr.getString(i);
+                        if (categoryExists(c, n)) {
+                            out.add(n);
+                        }
+                    }
+                    if (out.isEmpty()) {
+                        out.add(OTHER);
+                    }
+                    return out;
+                }
+            } catch (JSONException ignored) {
+                // fall through to seed
+            }
+        }
+        List<String> out = new ArrayList<>();
+        out.add(CategoryMap.NAMES[CategoryMap.categoryFor(pkg)]);
+        return out;
+    }
+
+    /** Store the user's membership choice for one app, in home order. */
+    public static void setMembership(Context c, String pkg, Set<String> cats) {
+        SharedPreferences p = prefs(c);
+        JSONObject obj;
+        try {
+            obj = new JSONObject(p.getString(KEY_MEMBERS, "{}"));
+        } catch (JSONException e) {
+            obj = new JSONObject();
+        }
+        JSONArray arr = new JSONArray();
+        for (String n : categories(c)) {
+            if (cats.contains(n)) {
+                arr.put(n);
+            }
+        }
+        try {
+            obj.put(pkg, arr);
+        } catch (JSONException ignored) {
+            return;
+        }
+        p.edit().putString(KEY_MEMBERS, obj.toString()).apply();
+    }
+}
