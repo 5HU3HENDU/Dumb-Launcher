@@ -4,31 +4,50 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
+import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Spinner;
 import android.widget.TextView;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * Launcher settings: the category list in home-screen order. From here the
- * owner can add a category, move one up or down in the order, or tap a category
- * to choose which apps belong to it. Apps stay A-Z inside each category.
+ * Launcher settings with two tabs:
+ *
+ *   Categories - the category list in home-screen order: add a category, move
+ *   one up or down, or tap one to choose which apps belong to it.
+ *
+ *   Apps - every installed app A-Z (work copies marked " (Work)") with a
+ *   category dropdown per app; choosing one moves the app there.
+ *
+ * Both tabs edit the same exclusive membership: each app sits in exactly one
+ * category. Apps stay A-Z inside each category on the home screen.
  */
 public class SettingsActivity extends Activity {
 
     private LinearLayout list;
+    private Button addButton;
+    private Button tabApps;
+    private Button tabCategories;
+    private boolean showingApps;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,18 +74,40 @@ public class SettingsActivity extends Activity {
         TextView title = new TextView(this);
         title.setText("Launcher settings");
         title.setTextSize(22);
-        title.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setTextColor(getColor(R.color.text_primary));
         root.addView(title, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        TextView hint = new TextView(this);
-        hint.setText("Tap a category to choose its apps. Each app sits in one category. "
-                + "Arrows change the order categories appear on the home screen.");
-        hint.setTextSize(13);
-        hint.setTextColor(getColor(R.color.text_secondary));
-        hint.setPadding(0, dp(4), 0, dp(10));
-        root.addView(hint, new LinearLayout.LayoutParams(
+        LinearLayout tabs = new LinearLayout(this);
+        tabs.setOrientation(LinearLayout.HORIZONTAL);
+        tabs.setPadding(0, dp(6), 0, dp(6));
+
+        tabApps = new Button(this);
+        tabApps.setText("Apps");
+        tabApps.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showingApps = true;
+                renderList();
+            }
+        });
+        tabs.addView(tabApps, new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        tabCategories = new Button(this);
+        tabCategories.setText("Categories");
+        tabCategories.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showingApps = false;
+                renderList();
+            }
+        });
+        tabs.addView(tabCategories, new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        root.addView(tabs, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         list = new LinearLayout(this);
@@ -77,18 +118,24 @@ public class SettingsActivity extends Activity {
         root.addView(scroll, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
-        Button add = new Button(this);
-        add.setText("+ New category");
-        add.setOnClickListener(new View.OnClickListener() {
+        addButton = new Button(this);
+        addButton.setText("+ New category");
+        addButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 promptNewCategory();
             }
         });
-        root.addView(add, new LinearLayout.LayoutParams(
+        root.addView(addButton, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         return root;
+    }
+
+    private void styleTabs() {
+        tabApps.setTypeface(null, showingApps ? Typeface.BOLD : Typeface.NORMAL);
+        tabCategories.setTypeface(null, showingApps ? Typeface.NORMAL : Typeface.BOLD);
+        addButton.setVisibility(showingApps ? View.GONE : View.VISIBLE);
     }
 
     private void promptNewCategory() {
@@ -113,20 +160,102 @@ public class SettingsActivity extends Activity {
     }
 
     private void renderList() {
+        styleTabs();
         list.removeAllViews();
+        if (showingApps) {
+            renderApps();
+        } else {
+            renderCategories();
+        }
+    }
 
-        // Count apps per category once for the row subtitles.
-        Map<String, Integer> counts = new HashMap<>();
-        PackageManager pm = getPackageManager();
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.addCategory(Intent.CATEGORY_LAUNCHER);
-        String self = getPackageName();
-        for (ResolveInfo ri : pm.queryIntentActivities(intent, 0)) {
-            String pkg = ri.activityInfo.packageName;
-            if (pkg == null || pkg.equals(self)) {
-                continue;
+    /** Apps tab: every installed app A-Z, with a category dropdown per app. */
+    private void renderApps() {
+        List<ProfileApps.Installed> apps = ProfileApps.list(this);
+        Collections.sort(apps, new Comparator<ProfileApps.Installed>() {
+            @Override
+            public int compare(ProfileApps.Installed a, ProfileApps.Installed b) {
+                int byLabel = a.label.toLowerCase(Locale.ROOT)
+                        .compareTo(b.label.toLowerCase(Locale.ROOT));
+                if (byLabel != 0) {
+                    return byLabel;
+                }
+                return Boolean.compare(a.work, b.work);
             }
-            String cat = CategoryStore.categoriesOf(this, pkg).get(0);
+        });
+
+        final List<String> cats = CategoryStore.categories(this);
+        final String[] names = cats.toArray(new String[0]);
+
+        for (final ProfileApps.Installed app : apps) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(0, dp(4), 0, dp(4));
+
+            ImageView icon = new ImageView(this);
+            Drawable d = app.icon;
+            if (d != null) {
+                icon.setImageDrawable(d);
+            }
+            row.addView(icon, new LinearLayout.LayoutParams(dp(36), dp(36)));
+
+            TextView label = new TextView(this);
+            label.setText(app.display);
+            label.setTextSize(16);
+            label.setTextColor(getColor(R.color.text_primary));
+            label.setSingleLine(true);
+            label.setPadding(dp(12), 0, dp(8), 0);
+            row.addView(label, new LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+            final Spinner spinner = new Spinner(this);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                    android.R.layout.simple_spinner_item, names);
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinner.setAdapter(adapter);
+            String now = CategoryStore.categoriesOf(this, app.key).get(0);
+            for (int i = 0; i < names.length; i++) {
+                if (names[i].equals(now)) {
+                    spinner.setSelection(i, false);
+                    break;
+                }
+            }
+            spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                private boolean firstFire = true;
+
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view,
+                                           int position, long id) {
+                    // Spinner fires once when the selection is set up; ignore that.
+                    if (firstFire) {
+                        firstFire = false;
+                        return;
+                    }
+                    Set<String> next = new LinkedHashSet<>();
+                    next.add(names[position]);
+                    CategoryStore.setMembership(SettingsActivity.this, app.key, next);
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+                }
+            });
+            row.addView(spinner, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+            list.addView(row, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        }
+    }
+
+    /** Categories tab: the ordered category list with reorder arrows. */
+    private void renderCategories() {
+        // Count apps per category once for the row subtitles. Profile-aware:
+        // a work copy and a personal copy of one package count separately.
+        Map<String, Integer> counts = new HashMap<>();
+        for (ProfileApps.Installed inst : ProfileApps.list(this)) {
+            String cat = CategoryStore.categoriesOf(this, inst.key).get(0);
             Integer n = counts.get(cat);
             counts.put(cat, n == null ? 1 : n + 1);
         }
@@ -186,13 +315,6 @@ public class SettingsActivity extends Activity {
 
             row.addView(text, new LinearLayout.LayoutParams(
                     0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-
-            row.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    CategoryAppsActivity.start(SettingsActivity.this, name);
-                }
-            });
 
             list.addView(row, new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));

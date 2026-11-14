@@ -1,18 +1,20 @@
 package com.dumb.launcher;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
+import android.content.pm.LauncherApps;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.UserHandle;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -43,6 +45,9 @@ public class MainActivity extends Activity {
     private GridArea gridArea;
     private TextView clockView;
     private TextView dateView;
+    private TextView profileToggle;
+    /** True while the grid shows the work profile, false for personal. */
+    private boolean showWork;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable ticker = new Runnable() {
@@ -57,6 +62,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(buildContentView());
+        showWork = uiPrefs().getBoolean(KEY_SHOW_WORK, false);
         tickClock();
         loadApps();
     }
@@ -117,6 +123,24 @@ public class MainActivity extends Activity {
         header.addView(headerText, new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
+        // Profile switch, adjacent to the settings gear: shows one profile's
+        // apps at a time. Only appears when the device has a work profile.
+        profileToggle = new TextView(this);
+        profileToggle.setTextSize(15);
+        profileToggle.setTypeface(Typeface.DEFAULT_BOLD);
+        profileToggle.setTextColor(getColor(R.color.text_secondary));
+        profileToggle.setPadding(dp(10), dp(6), dp(10), dp(6));
+        profileToggle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showWork = !showWork;
+                uiPrefs().edit().putBoolean(KEY_SHOW_WORK, showWork).apply();
+                loadApps();
+            }
+        });
+        header.addView(profileToggle, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
         TextView gear = new TextView(this);
         gear.setText("⚙");
         gear.setTextSize(24);
@@ -160,13 +184,31 @@ public class MainActivity extends Activity {
         dateView.setText(new SimpleDateFormat("EEEE, d MMMM", Locale.ENGLISH).format(now));
     }
 
-    private void loadApps() {
-        PackageManager pm = getPackageManager();
-        Intent intent = new Intent(Intent.ACTION_MAIN);
-        intent.addCategory(Intent.CATEGORY_LAUNCHER);
-        List<ResolveInfo> resolved = pm.queryIntentActivities(intent, 0);
+    private static final String PREFS_UI = "dumb_launcher_ui";
+    private static final String KEY_SHOW_WORK = "show_work";
 
-        String self = getPackageName();
+    private SharedPreferences uiPrefs() {
+        return getSharedPreferences(PREFS_UI, MODE_PRIVATE);
+    }
+
+    private void loadApps() {
+        List<ProfileApps.Installed> all = ProfileApps.list(this);
+
+        // Fall back to personal if the work profile is gone or has no apps.
+        boolean hasWork = false;
+        for (ProfileApps.Installed inst : all) {
+            if (inst.work) {
+                hasWork = true;
+                break;
+            }
+        }
+        if (showWork && !hasWork) {
+            showWork = false;
+            uiPrefs().edit().putBoolean(KEY_SHOW_WORK, false).apply();
+        }
+        profileToggle.setVisibility(hasWork ? View.VISIBLE : View.GONE);
+        profileToggle.setText(showWork ? "Work" : "Personal");
+
         List<String> cats = CategoryStore.categories(this);
         Map<String, List<AppInfo>> groups = new LinkedHashMap<>();
         for (String c : cats) {
@@ -176,16 +218,14 @@ public class MainActivity extends Activity {
             groups.put(CategoryStore.OTHER, new ArrayList<AppInfo>());
         }
 
-        for (ResolveInfo ri : resolved) {
-            String pkg = ri.activityInfo.packageName;
-            if (pkg == null || pkg.equals(self)) {
+        for (ProfileApps.Installed inst : all) {
+            if (inst.work != showWork) {
                 continue;
             }
-            CharSequence labelCs = ri.loadLabel(pm);
-            String label = labelCs == null ? pkg : labelCs.toString();
-            AppInfo app = new AppInfo(label, pkg, ri.loadIcon(pm));
+            AppInfo app = new AppInfo(inst.label, inst.key, inst.icon,
+                    inst.component, inst.user);
             boolean placed = false;
-            for (String cat : CategoryStore.categoriesOf(this, pkg)) {
+            for (String cat : CategoryStore.categoriesOf(this, inst.key)) {
                 List<AppInfo> group = groups.get(cat);
                 if (group != null) {
                     group.add(app);
@@ -216,24 +256,34 @@ public class MainActivity extends Activity {
         gridArea.setApps(ordered);
     }
 
-    private void launch(String pkg) {
-        Intent li = getPackageManager().getLaunchIntentForPackage(pkg);
-        if (li != null) {
-            li.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(li);
+    private void launch(AppInfo app) {
+        LauncherApps la = (LauncherApps) getSystemService(LAUNCHER_APPS_SERVICE);
+        if (la == null) {
+            return;
+        }
+        try {
+            la.startMainActivity(app.component, app.user, null, null);
+        } catch (RuntimeException e) {
+            // Profile paused/locked or activity unavailable: the platform owns
+            // whatever happens next; we never bypass work-profile controls.
         }
     }
 
-    /** One installed, launchable app with its icon. */
+    /** One installed, launchable app in one profile, with its icon. */
     private static final class AppInfo {
         final String label;
-        final String pkg;
+        final String key;
         final Drawable icon;
+        final ComponentName component;
+        final UserHandle user;
 
-        AppInfo(String label, String pkg, Drawable icon) {
+        AppInfo(String label, String key, Drawable icon,
+                ComponentName component, UserHandle user) {
             this.label = label;
-            this.pkg = pkg;
+            this.key = key;
             this.icon = icon;
+            this.component = component;
+            this.user = user;
         }
     }
 
@@ -255,7 +305,7 @@ public class MainActivity extends Activity {
                 tile.setOnClickListener(new OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        launch(app.pkg);
+                        launch(app);
                     }
                 });
                 addView(tile);

@@ -101,15 +101,19 @@ public final class CategoryStore {
 
     /**
      * Categories this app belongs to: the user's override when one is stored,
-     * otherwise the built-in seed mapping, otherwise Other.
+     * otherwise the built-in seed mapping, otherwise Other. The key is
+     * profile-aware (see ProfileApps): a work copy can be categorized
+     * separately from the personal copy of the same package. Seeds always
+     * resolve by the bare package name, so a work copy with no override yet
+     * lands in the same seeded category as its personal counterpart.
      */
-    public static List<String> categoriesOf(Context c, String pkg) {
+    public static List<String> categoriesOf(Context c, String key) {
         String raw = prefs(c).getString(KEY_MEMBERS, null);
         if (raw != null) {
             try {
                 JSONObject obj = new JSONObject(raw);
-                if (obj.has(pkg)) {
-                    JSONArray arr = obj.getJSONArray(pkg);
+                if (obj.has(key)) {
+                    JSONArray arr = obj.getJSONArray(key);
                     List<String> out = new ArrayList<>();
                     for (int i = 0; i < arr.length(); i++) {
                         String n = arr.getString(i);
@@ -127,12 +131,12 @@ public final class CategoryStore {
             }
         }
         List<String> out = new ArrayList<>();
-        out.add(CategoryMap.NAMES[CategoryMap.categoryFor(pkg)]);
+        out.add(CategoryMap.NAMES[CategoryMap.categoryFor(ProfileApps.basePackage(key))]);
         return out;
     }
 
-    /** Store the user's membership choice for one app, in home order. */
-    public static void setMembership(Context c, String pkg, Set<String> cats) {
+    /** Store the user's membership choice for one app key, in home order. */
+    public static void setMembership(Context c, String key, Set<String> cats) {
         SharedPreferences p = prefs(c);
         JSONObject obj;
         try {
@@ -147,7 +151,7 @@ public final class CategoryStore {
             }
         }
         try {
-            obj.put(pkg, arr);
+            obj.put(key, arr);
         } catch (JSONException ignored) {
             return;
         }
