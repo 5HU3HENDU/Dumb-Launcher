@@ -187,10 +187,11 @@ public final class CategoryStore {
     }
 
     /**
-     * Delete a category from the order list. Stored memberships that name it
-     * resolve to Other on the next read (categoriesOf filters names that no
-     * longer exist), so its apps land in Other without a data rewrite.
-     * Other itself cannot be deleted. Returns true when removed.
+     * Delete a category: remove it from the order list and reassign every app
+     * that belonged to it to Other, durably. The membership rewrite matters:
+     * leaving the old name in stored memberships would resurrect assignments
+     * if a category with the same name were created later. Other itself
+     * cannot be deleted. Returns true when removed.
      */
     public static boolean removeCategory(Context c, String name) {
         if (OTHER.equals(name)) {
@@ -209,6 +210,34 @@ public final class CategoryStore {
             return false;
         }
         saveOrder(c, cats);
+        SharedPreferences p = prefs(c);
+        try {
+            JSONObject obj = new JSONObject(p.getString(KEY_MEMBERS, "{}"));
+            JSONArray keys = obj.names();
+            if (keys != null) {
+                for (int i = 0; i < keys.length(); i++) {
+                    String k = keys.getString(i);
+                    JSONArray arr = obj.getJSONArray(k);
+                    JSONArray next = new JSONArray();
+                    boolean hasOther = false;
+                    for (int j = 0; j < arr.length(); j++) {
+                        String n = arr.getString(j);
+                        String mapped = n.equals(name) ? OTHER : n;
+                        if (OTHER.equals(mapped)) {
+                            if (hasOther) {
+                                continue;
+                            }
+                            hasOther = true;
+                        }
+                        next.put(mapped);
+                    }
+                    obj.put(k, next);
+                }
+                p.edit().putString(KEY_MEMBERS, obj.toString()).apply();
+            }
+        } catch (JSONException ignored) {
+            // stale names still resolve to Other on read
+        }
         return true;
     }
 

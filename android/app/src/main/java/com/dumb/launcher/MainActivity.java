@@ -9,7 +9,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
@@ -373,13 +372,13 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * One tile: neutral rounded square with the app's real icon centered, no
+     * One tile: just the app's own icon, centered, no background square and no
      * name label (icons only per the owner's design call; names still show in
-     * settings). No category colors; grouping is expressed by order only.
+     * settings). No category colors; grouping is expressed by order only. The
+     * icon takes most of the cell so it reads larger without changing the grid.
      */
     private static final class TileView extends View {
 
-        private final GradientDrawable background;
         private final Drawable icon;
         private int iconSize;
         private int iconTop;
@@ -387,12 +386,6 @@ public class MainActivity extends Activity {
         TileView(Context context, AppInfo app) {
             super(context);
             this.icon = app.icon;
-            this.background = new GradientDrawable();
-            this.background.setColor(context.getColor(R.color.tile_bg));
-            float density = getResources().getDisplayMetrics().density;
-            this.background.setCornerRadius(12 * density);
-            this.background.setStroke(Math.max(1, (int) density),
-                    context.getColor(R.color.tile_border));
         }
 
         @Override
@@ -401,9 +394,7 @@ public class MainActivity extends Activity {
             if (w <= 0 || h <= 0) {
                 return;
             }
-            background.setBounds(0, 0, w, h);
-
-            iconSize = (int) (Math.min(w, h) * 0.6f);
+            iconSize = (int) (Math.min(w, h) * 0.85f);
             iconTop = (h - iconSize) / 2;
             if (iconTop < 0) {
                 iconTop = 0;
@@ -413,7 +404,6 @@ public class MainActivity extends Activity {
         @Override
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
-            background.draw(canvas);
             int w = getWidth();
             int cx = w / 2;
             if (icon != null && iconSize > 0) {
