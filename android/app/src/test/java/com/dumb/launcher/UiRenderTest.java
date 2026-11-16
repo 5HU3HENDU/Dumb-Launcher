@@ -36,18 +36,20 @@ public class UiRenderTest {
         fos.close();
     }
 
-    private static void clickText(View root, String text) {
+    static boolean clickText(View root, String text) {
         if (root instanceof android.widget.TextView
                 && text.equals(((android.widget.TextView) root).getText().toString())) {
-            root.performClick();
-            return;
+            return root.performClick();
         }
         if (root instanceof android.view.ViewGroup) {
             android.view.ViewGroup g = (android.view.ViewGroup) root;
             for (int i = 0; i < g.getChildCount(); i++) {
-                clickText(g.getChildAt(i), text);
+                if (clickText(g.getChildAt(i), text)) {
+                    return true;
+                }
             }
         }
+        return false;
     }
 
     @Test
