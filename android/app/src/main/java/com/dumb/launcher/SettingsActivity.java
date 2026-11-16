@@ -285,28 +285,34 @@ public class SettingsActivity extends Activity {
 
     /** Threshold row at the top of the Apps tab: week or month. */
     /**
-     * Usage-access status for the Inactive folder. Without it, inactivity is
-     * measured by launches through this launcher only; granting it (system
-     * settings) makes the folder count apps opened any way on the device.
-     * Work-profile apps always use launcher launches: the system reports no
-     * cross-profile usage stats.
+     * Usage-access status for the Inactive folder, spelled out: without the
+     * grant, auto-move is OFF because launches through this launcher cannot
+     * prove an app went unused; manual Hide keeps working. With the grant,
+     * real device usage decides, and work-profile apps are still never
+     * auto-moved because the system reports no cross-profile usage stats.
      */
     private void renderUsageAccessRow() {
         final boolean granted = InactiveStore.hasUsageAccess(this);
         LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setOrientation(LinearLayout.VERTICAL);
         row.setPadding(0, dp(2), 0, dp(10));
 
         TextView label = new TextView(this);
         label.setTextSize(14);
         label.setTextColor(getColor(R.color.text_secondary));
         label.setText(granted
-                ? "Precise tracking: on - Inactive counts apps opened any way"
-                : "Precise tracking: off - tap to grant Usage access, so apps"
-                        + " opened outside the launcher stay active");
+                ? "Auto-move to Inactive: on. Apps you have not opened for the"
+                        + " period above move to the Inactive folder, counted by"
+                        + " real device usage. Work apps are never auto-moved"
+                        + " (the system shares no work-app usage); use Hide for"
+                        + " those."
+                : "Auto-move to Inactive: off. Tap to grant Usage access."
+                        + " Without it this launcher can only see apps you open"
+                        + " from here, so unused apps are not auto-moved rather"
+                        + " than guessed. Hide below still moves any app"
+                        + " manually.");
         row.addView(label, new LinearLayout.LayoutParams(
-                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         if (!granted) {
             row.setOnClickListener(new View.OnClickListener() {

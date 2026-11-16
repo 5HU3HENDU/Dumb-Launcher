@@ -18,15 +18,17 @@ keystore.properties next to settings.gradle (see .gitignore note) and rebuild.
 - ProfileApps.java: per-profile app enumeration via LauncherApps, profile-aware keys.
 - CategoryMap.java: category names and package-to-category seed map (editable data).
 - CategoryStore.java: persisted category order, renames, deletions and app membership.
-- InactiveStore.java: inactivity threshold (week/month), last-used/first-seen
-  tracking, optional UsageStats integration and the manual hide set. With Usage
-  access granted (Settings offers a link to the system toggle), inactivity uses
-  real device usage for personal-profile apps; without it, launches through
-  this launcher. Work-profile apps always use launcher launches - the system
-  reports no cross-profile usage stats. Apps with no signal age from first
+- InactiveStore.java: inactivity threshold (week/month), UsageStats-based
+  real-usage tracking and the manual hide set. Auto-move runs only with Usage
+  access granted (Settings links to the system toggle) and only for
+  personal-profile apps - the system shares no work-app usage, and launches
+  through this launcher cannot prove an app went unused, so otherwise nothing
+  is auto-moved rather than guessed. Apps with no usage signal age from first
   sighting. Auto-inactive apps return to their original category when opened;
   hidden apps stay until unhidden. Real category membership is never rewritten
   by this feature.
+- app/src/test: Robolectric unit tests for the inactivity rules (thresholds,
+  usage-access gating, work-profile isolation, hide persistence).
 - InactiveActivity.java: the Inactive folder screen - auto-inactive and manually
   hidden apps together, A-Z, same no-scroll shrink-to-fit grid.
 - SettingsActivity.java: two settings tabs - Apps (category dropdown per app,

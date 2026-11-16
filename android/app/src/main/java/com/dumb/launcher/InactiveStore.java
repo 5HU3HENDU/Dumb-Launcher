@@ -23,13 +23,13 @@ import org.json.JSONObject;
  * own SharedPreferences file so it survives process death and app updates.
  *
  * An app appears in the Inactive folder when it is manually hidden, or when
- * it has not been used within the threshold. When the user grants Usage
- * access, "used" means real device usage reported by UsageStats (opens from
- * notifications, links, widgets - anything), for apps in this profile;
- * without it, usage is measured by launches from this launcher. Apps with
- * no signal age from when they were first seen, so nothing becomes inactive
- * right after install or upgrade. Work-profile apps always use launcher
- * launches only: the system reports no cross-profile usage stats.
+ * Usage access is granted and real device usage (UsageStats) shows the app
+ * unused for the threshold. Without Usage access, or for work-profile apps
+ * (the system reports no cross-profile usage stats), apps are never
+ * auto-moved: launches through this launcher cannot prove an app went
+ * unused, so auto-moving could wrongly hide apps opened via notifications,
+ * links or widgets. Apps with no usage signal age from when they were first
+ * seen, so nothing becomes inactive right after granting access.
  *
  * Membership in real categories is never touched: an auto-inactive app
  * returns to its original category the moment it is opened, and a manually
@@ -211,13 +211,19 @@ public final class InactiveStore {
      */
     public static boolean isAutoInactive(Context c, String key, long now,
             Map<String, Long> usage, boolean usageGranted) {
+        if (!usageGranted || key.endsWith(ProfileApps.WORK_SUFFIX)) {
+            // Never auto-move an app whose real usage cannot be checked.
+            // Launches through this launcher cannot prove an app went unused
+            // (it may be opened via notifications, links or widgets), and the
+            // system reports no cross-profile usage stats for work apps.
+            // Manual Hide still works in both cases.
+            return false;
+        }
         SharedPreferences p = prefs(c);
         long last = readTime(p, key, KEY_LAST_USED);
-        if (usageGranted && !key.endsWith(ProfileApps.WORK_SUFFIX)) {
-            Long u = usage.get(key);
-            if (u != null && u > last) {
-                last = u;
-            }
+        Long u = usage.get(key);
+        if (u != null && u > last) {
+            last = u;
         }
         if (last == 0L) {
             last = readTime(p, key, KEY_FIRST_SEEN);
