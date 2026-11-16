@@ -8,6 +8,11 @@
         </intent>
     </queries>
 
+    <!-- Usage access (granted by the user in system settings) lets the
+         Inactive folder measure real device usage instead of only launches
+         through this launcher. Optional: the folder works without it. -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+
     <application
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"

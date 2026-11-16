@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * The Inactive folder screen: one viewport-filling, no-scroll grid of every
@@ -119,12 +120,18 @@ public class InactiveActivity extends Activity {
     /** Rebuild the folder contents: hidden or auto-inactive apps, A-Z. */
     private void loadInactive() {
         long now = System.currentTimeMillis();
+        boolean usageGranted = InactiveStore.hasUsageAccess(this);
+        Map<String, Long> usage = usageGranted
+                ? InactiveStore.usageLastUsed(this,
+                        now - InactiveStore.thresholdMillis(this))
+                : Collections.<String, Long>emptyMap();
         List<AppInfo> inactive = new ArrayList<>();
         for (ProfileApps.Installed inst : ProfileApps.list(this)) {
             if (inst.work != showWork) {
                 continue;
             }
-            if (InactiveStore.inInactiveFolder(this, inst.key, now)) {
+            if (InactiveStore.inInactiveFolder(this, inst.key, now,
+                    usage, usageGranted)) {
                 inactive.add(new AppInfo(inst.label, inst.key, inst.icon,
                         inst.component, inst.user));
             }

@@ -221,6 +221,11 @@ public class MainActivity extends Activity {
         }
 
         long now = System.currentTimeMillis();
+        boolean usageGranted = InactiveStore.hasUsageAccess(this);
+        Map<String, Long> usage = usageGranted
+                ? InactiveStore.usageLastUsed(this,
+                        now - InactiveStore.thresholdMillis(this))
+                : Collections.<String, Long>emptyMap();
         int inactiveCount = 0;
         for (ProfileApps.Installed inst : all) {
             InactiveStore.noteSeen(this, inst.key, now);
@@ -229,7 +234,8 @@ public class MainActivity extends Activity {
             }
             AppInfo app = new AppInfo(inst.label, inst.key, inst.icon,
                     inst.component, inst.user);
-            if (InactiveStore.inInactiveFolder(this, inst.key, now)) {
+            if (InactiveStore.inInactiveFolder(this, inst.key, now,
+                    usage, usageGranted)) {
                 // In the Inactive folder instead of its category; the folder
                 // tile at the end of the grid opens the combined set.
                 inactiveCount++;

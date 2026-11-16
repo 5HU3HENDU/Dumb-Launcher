@@ -1,7 +1,17 @@
 package com.dumb.launcher;
 
+import android.app.AppOpsManager;
+import android.app.usage.UsageStats;
+import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import android.os.Process;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -13,10 +23,13 @@ import org.json.JSONObject;
  * own SharedPreferences file so it survives process death and app updates.
  *
  * An app appears in the Inactive folder when it is manually hidden, or when
- * it has not been opened through the launcher within the threshold. Usage is
- * measured by launches from this launcher (no usage-access permission);
- * apps never launched through the launcher age from when they were first
- * seen, so nothing becomes inactive right after install or upgrade.
+ * it has not been used within the threshold. When the user grants Usage
+ * access, "used" means real device usage reported by UsageStats (opens from
+ * notifications, links, widgets - anything), for apps in this profile;
+ * without it, usage is measured by launches from this launcher. Apps with
+ * no signal age from when they were first seen, so nothing becomes inactive
+ * right after install or upgrade. Work-profile apps always use launcher
+ * launches only: the system reports no cross-profile usage stats.
  *
  * Membership in real categories is never touched: an auto-inactive app
  * returns to its original category the moment it is opened, and a manually
@@ -55,7 +68,7 @@ public final class InactiveStore {
         prefs(c).edit().putString(KEY_THRESHOLD, value).apply();
     }
 
-    private static long thresholdMillis(Context c) {
+    static long thresholdMillis(Context c) {
         return MONTH.equals(threshold(c)) ? MONTH_MILLIS : WEEK_MILLIS;
     }
 
@@ -134,14 +147,78 @@ public final class InactiveStore {
         p.edit().putString(KEY_HIDDEN, next.toString()).apply();
     }
 
+    /** True when the user has granted this app Usage access. */
+    public static boolean hasUsageAccess(Context c) {
+        AppOpsManager aom = (AppOpsManager) c.getSystemService(Context.APP_OPS_SERVICE);
+        if (aom == null) {
+            return false;
+        }
+        int mode;
+        if (Build.VERSION.SDK_INT >= 29) {
+            mode = aom.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    Process.myUid(), c.getPackageName());
+        } else {
+            mode = aom.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    Process.myUid(), c.getPackageName());
+        }
+        if (mode == AppOpsManager.MODE_DEFAULT) {
+            return c.checkCallingOrSelfPermission(
+                    android.Manifest.permission.PACKAGE_USAGE_STATS)
+                    == PackageManager.PERMISSION_GRANTED;
+        }
+        return mode == AppOpsManager.MODE_ALLOWED;
+    }
+
+    /**
+     * Per-package last-used times from UsageStats for apps used at least
+     * once in [windowStart, now]. Empty when Usage access is not granted or
+     * the service is unavailable. Covers this profile only.
+     */
+    public static Map<String, Long> usageLastUsed(Context c, long windowStart) {
+        Map<String, Long> out = new HashMap<>();
+        UsageStatsManager usm =
+                (UsageStatsManager) c.getSystemService(Context.USAGE_STATS_SERVICE);
+        if (usm == null) {
+            return out;
+        }
+        List<UsageStats> stats;
+        try {
+            stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_BEST,
+                    windowStart, System.currentTimeMillis());
+        } catch (RuntimeException e) {
+            return out;
+        }
+        if (stats == null) {
+            return out;
+        }
+        for (UsageStats st : stats) {
+            Long prev = out.get(st.getPackageName());
+            long t = st.getLastTimeUsed();
+            if (prev == null || t > prev) {
+                out.put(st.getPackageName(), t);
+            }
+        }
+        return out;
+    }
+
     /**
      * True when the app has out-aged the inactivity threshold. The clock
-     * starts at the last launch through the launcher, or at first sighting
-     * when it was never launched here.
+     * starts at the most recent of: last launch through the launcher, last
+     * UsageStats use (usageGranted, personal-profile keys only - the system
+     * reports no work-profile usage), or first sighting when neither exists.
+     * Pass a windowed map from usageLastUsed(now - thresholdMillis) and an
+     * empty map with usageGranted=false when Usage access is not granted.
      */
-    public static boolean isAutoInactive(Context c, String key, long now) {
+    public static boolean isAutoInactive(Context c, String key, long now,
+            Map<String, Long> usage, boolean usageGranted) {
         SharedPreferences p = prefs(c);
         long last = readTime(p, key, KEY_LAST_USED);
+        if (usageGranted && !key.endsWith(ProfileApps.WORK_SUFFIX)) {
+            Long u = usage.get(key);
+            if (u != null && u > last) {
+                last = u;
+            }
+        }
         if (last == 0L) {
             last = readTime(p, key, KEY_FIRST_SEEN);
         }
@@ -152,7 +229,8 @@ public final class InactiveStore {
     }
 
     /** Folder membership: manually hidden, or auto-inactive. */
-    public static boolean inInactiveFolder(Context c, String key, long now) {
-        return isHidden(c, key) || isAutoInactive(c, key, now);
+    public static boolean inInactiveFolder(Context c, String key, long now,
+            Map<String, Long> usage, boolean usageGranted) {
+        return isHidden(c, key) || isAutoInactive(c, key, now, usage, usageGranted);
     }
 }

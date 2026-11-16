@@ -19,12 +19,17 @@ keystore.properties next to settings.gradle (see .gitignore note) and rebuild.
 - CategoryMap.java: category names and package-to-category seed map (editable data).
 - CategoryStore.java: persisted category order, renames, deletions and app membership.
 - InactiveStore.java: inactivity threshold (week/month), last-used/first-seen
-  tracking and the manual hide set. Inactivity is measured by launches through
-  this launcher; apps never launched here age from first sighting. Auto-inactive
-  apps return to their original category when opened; hidden apps stay until
-  unhidden. Real category membership is never rewritten by this feature.
+  tracking, optional UsageStats integration and the manual hide set. With Usage
+  access granted (Settings offers a link to the system toggle), inactivity uses
+  real device usage for personal-profile apps; without it, launches through
+  this launcher. Work-profile apps always use launcher launches - the system
+  reports no cross-profile usage stats. Apps with no signal age from first
+  sighting. Auto-inactive apps return to their original category when opened;
+  hidden apps stay until unhidden. Real category membership is never rewritten
+  by this feature.
 - InactiveActivity.java: the Inactive folder screen - auto-inactive and manually
   hidden apps together, A-Z, same no-scroll shrink-to-fit grid.
 - SettingsActivity.java: two settings tabs - Apps (category dropdown per app,
-  Hide/Unhide button, inactivity threshold), Categories (add, reorder, rename,
-  delete; deleted categories' apps move to Other).
+  Hide/Unhide button, inactivity threshold, Usage-access status/grant link),
+  Categories (add, reorder, rename, delete; deleted categories' apps move to
+  Other).

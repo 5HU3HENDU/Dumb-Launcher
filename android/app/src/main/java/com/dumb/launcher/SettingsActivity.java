@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.Drawable;
@@ -193,6 +194,7 @@ public class SettingsActivity extends Activity {
         });
 
         renderThresholdRow();
+        renderUsageAccessRow();
 
         final List<String> cats = CategoryStore.categories(this);
         final String[] names = cats.toArray(new String[0]);
@@ -282,6 +284,43 @@ public class SettingsActivity extends Activity {
     }
 
     /** Threshold row at the top of the Apps tab: week or month. */
+    /**
+     * Usage-access status for the Inactive folder. Without it, inactivity is
+     * measured by launches through this launcher only; granting it (system
+     * settings) makes the folder count apps opened any way on the device.
+     * Work-profile apps always use launcher launches: the system reports no
+     * cross-profile usage stats.
+     */
+    private void renderUsageAccessRow() {
+        final boolean granted = InactiveStore.hasUsageAccess(this);
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, dp(2), 0, dp(10));
+
+        TextView label = new TextView(this);
+        label.setTextSize(14);
+        label.setTextColor(getColor(R.color.text_secondary));
+        label.setText(granted
+                ? "Precise tracking: on - Inactive counts apps opened any way"
+                : "Precise tracking: off - tap to grant Usage access, so apps"
+                        + " opened outside the launcher stay active");
+        row.addView(label, new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        if (!granted) {
+            row.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    startActivity(new Intent(
+                            android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS));
+                }
+            });
+        }
+        list.addView(row, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+    }
+
     private void renderThresholdRow() {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
