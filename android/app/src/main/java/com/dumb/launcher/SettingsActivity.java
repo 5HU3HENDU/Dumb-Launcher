@@ -41,7 +41,10 @@ import java.util.Set;
  *   the background band colour shown behind its apps on the home grid.
  *
  *   Apps - every installed app A-Z (work copies marked " (Work)") with a
- *   category dropdown per app; choosing one moves the app there.
+ *   category dropdown per app; choosing one moves the app there. Each row
+ *   also has a Hide/Unhide button for the Inactive folder, and the tab
+ *   header sets the inactivity threshold (week or month) after which an
+ *   unused app moves to the Inactive folder on its own.
  *
  * Both tabs edit the same exclusive membership: each app sits in exactly one
  * category. Apps stay A-Z inside each category on the home screen.
@@ -189,6 +192,8 @@ public class SettingsActivity extends Activity {
             }
         });
 
+        renderThresholdRow();
+
         final List<String> cats = CategoryStore.categories(this);
         final String[] names = cats.toArray(new String[0]);
 
@@ -250,9 +255,76 @@ public class SettingsActivity extends Activity {
             row.addView(spinner, new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+            // Manual hide: the app moves to the Inactive folder and stays
+            // there, even when used, until it is unhidden here.
+            final boolean hidden = InactiveStore.isHidden(this, app.key);
+            final Button hide = new Button(this);
+            hide.setText(hidden ? "Unhide" : "Hide");
+            hide.setTextSize(12);
+            hide.setMinWidth(0);
+            hide.setMinimumWidth(0);
+            hide.setPadding(dp(10), 0, dp(10), 0);
+            hide.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    InactiveStore.setHidden(SettingsActivity.this, app.key, !hidden);
+                    renderList();
+                }
+            });
+            LinearLayout.LayoutParams hideLp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, dp(40));
+            hideLp.setMargins(dp(4), 0, 0, 0);
+            row.addView(hide, hideLp);
+
             list.addView(row, new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         }
+    }
+
+    /** Threshold row at the top of the Apps tab: week or month. */
+    private void renderThresholdRow() {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, dp(2), 0, dp(10));
+
+        TextView label = new TextView(this);
+        label.setText("Move unused apps to Inactive after");
+        label.setTextSize(14);
+        label.setTextColor(getColor(R.color.text_secondary));
+        row.addView(label, new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        final String[] options = {"Week", "Month"};
+        final String[] values = {InactiveStore.WEEK, InactiveStore.MONTH};
+        final Spinner spinner = new Spinner(this);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, options);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        final int[] current = {
+                InactiveStore.MONTH.equals(InactiveStore.threshold(this)) ? 1 : 0};
+        spinner.setSelection(current[0], false);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view,
+                                       int position, long id) {
+                if (position == current[0]) {
+                    return;
+                }
+                current[0] = position;
+                InactiveStore.setThreshold(SettingsActivity.this, values[position]);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+        row.addView(spinner, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        list.addView(row, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     }
 
     /** Categories tab: the ordered category list with reorder arrows. */

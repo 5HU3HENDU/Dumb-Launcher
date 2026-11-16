@@ -220,12 +220,21 @@ public class MainActivity extends Activity {
             groups.put(CategoryStore.OTHER, new ArrayList<AppInfo>());
         }
 
+        long now = System.currentTimeMillis();
+        int inactiveCount = 0;
         for (ProfileApps.Installed inst : all) {
+            InactiveStore.noteSeen(this, inst.key, now);
             if (inst.work != showWork) {
                 continue;
             }
             AppInfo app = new AppInfo(inst.label, inst.key, inst.icon,
                     inst.component, inst.user);
+            if (InactiveStore.inInactiveFolder(this, inst.key, now)) {
+                // In the Inactive folder instead of its category; the folder
+                // tile at the end of the grid opens the combined set.
+                inactiveCount++;
+                continue;
+            }
             boolean placed = false;
             for (String cat : CategoryStore.categoriesOf(this, inst.key)) {
                 List<AppInfo> group = groups.get(cat);
@@ -257,10 +266,16 @@ public class MainActivity extends Activity {
             ordered.addAll(group);
         }
 
-        gridArea.setApps(ordered);
+        gridArea.setApps(ordered, inactiveCount);
+    }
+
+    private void openInactive() {
+        startActivity(new Intent(this, InactiveActivity.class)
+                .putExtra(InactiveActivity.EXTRA_SHOW_WORK, showWork));
     }
 
     private void launch(AppInfo app) {
+        InactiveStore.recordLaunch(this, app.key);
         LauncherApps la = (LauncherApps) getSystemService(LAUNCHER_APPS_SERVICE);
         if (la == null) {
             return;
@@ -311,7 +326,7 @@ public class MainActivity extends Activity {
             super(context);
         }
 
-        void setApps(List<AppInfo> apps) {
+        void setApps(List<AppInfo> apps, int inactiveCount) {
             removeAllViews();
             for (final AppInfo app : apps) {
                 TileView tile = new TileView(getContext(), app);
@@ -322,6 +337,17 @@ public class MainActivity extends Activity {
                     }
                 });
                 addView(tile);
+            }
+            // The Inactive folder sits as the last tile, after every active app.
+            if (inactiveCount > 0) {
+                FolderTileView folder = new FolderTileView(getContext());
+                folder.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        openInactive();
+                    }
+                });
+                addView(folder);
             }
             requestLayout();
         }
@@ -411,11 +437,18 @@ public class MainActivity extends Activity {
             }
             int i = 0;
             while (i < n) {
-                TileView first = (TileView) getChildAt(i);
+                View child = getChildAt(i);
+                if (!(child instanceof TileView)) {
+                    // The Inactive folder tile carries no category band.
+                    i++;
+                    continue;
+                }
+                TileView first = (TileView) child;
                 String cat = first.app.category;
                 int row = i / lastCols;
                 int j = i;
-                while (j + 1 < n && (j + 1) / lastCols == row) {
+                while (j + 1 < n && (j + 1) / lastCols == row
+                        && getChildAt(j + 1) instanceof TileView) {
                     TileView next = (TileView) getChildAt(j + 1);
                     if (!next.app.category.equals(cat)) {
                         break;
@@ -482,6 +515,75 @@ public class MainActivity extends Activity {
                 icon.setBounds(cx - iconSize / 2, iconTop, cx + iconSize / 2, iconTop + iconSize);
                 icon.draw(canvas);
             }
+        }
+    }
+
+    /**
+     * The Inactive folder tile: a greyish folder with a small clock badge,
+     * always the last tile after the active apps. Tapping it opens
+     * InactiveActivity with the combined inactive and manually hidden set.
+     */
+    private final class FolderTileView extends View {
+
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF rect = new RectF();
+        private int iconSize;
+        private int iconTop;
+
+        FolderTileView(Context context) {
+            super(context);
+            setContentDescription("Inactive folder");
+        }
+
+        @Override
+        protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+            super.onSizeChanged(w, h, oldw, oldh);
+            if (w <= 0 || h <= 0) {
+                return;
+            }
+            iconSize = (int) (Math.min(w, h) * 0.85f);
+            iconTop = (h - iconSize) / 2;
+            if (iconTop < 0) {
+                iconTop = 0;
+            }
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if (iconSize <= 0) {
+                return;
+            }
+            float left = (getWidth() - iconSize) / 2f;
+            float top = iconTop;
+            float size = iconSize;
+
+            // Folder tab (slightly darker grey), then the folder body.
+            float tabW = size * 0.44f;
+            float tabH = size * 0.16f;
+            paint.setColor(0xFF868D96);
+            rect.set(left, top, left + tabW, top + tabH + size * 0.06f);
+            canvas.drawRoundRect(rect, size * 0.08f, size * 0.08f, paint);
+
+            paint.setColor(0xFFA6ADB5);
+            float bodyTop = top + tabH * 0.7f;
+            rect.set(left, bodyTop, left + size, top + size);
+            canvas.drawRoundRect(rect, size * 0.1f, size * 0.1f, paint);
+
+            // Clock badge, bottom-right: white face, grey ring and hands.
+            float badgeR = size * 0.24f;
+            float bx = left + size - badgeR * 0.9f;
+            float by = top + size - badgeR * 0.9f;
+            paint.setColor(0xFFFFFFFF);
+            canvas.drawCircle(bx, by, badgeR, paint);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(Math.max(2f, size * 0.035f));
+            paint.setColor(0xFF6E747B);
+            canvas.drawCircle(bx, by, badgeR, paint);
+            paint.setStrokeWidth(Math.max(2f, size * 0.04f));
+            canvas.drawLine(bx, by, bx, by - badgeR * 0.5f, paint);
+            canvas.drawLine(bx, by, bx + badgeR * 0.38f, by + badgeR * 0.12f, paint);
+            paint.setStyle(Paint.Style.FILL);
         }
     }
 }

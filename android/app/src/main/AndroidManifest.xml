@@ -32,5 +32,9 @@
         <activity
             android:name=".SettingsActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".InactiveActivity"
+            android:exported="false" />
     </application>
 </manifest>
